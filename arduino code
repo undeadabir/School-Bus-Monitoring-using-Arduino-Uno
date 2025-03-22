@@ -1,0 +1,62 @@
+#include <SoftwareSerial.h>
+#include <TinyGPS++.h>
+#include <SPI.h>
+#include <MFRC522.h>
+// defining pins
+#define SS_PIN 10
+#define RST_PIN 9
+#define SOS_BUTTON 7
+#define BUZZER 6
+#define LED 5
+// initializing modules
+SoftwareSerial gpsSerial(4,3);
+SofftwareSerial btSerial(2,1);
+TinyGPSPlus gps;
+MFRC522 rfid(SS_PIN, RST_PIN);
+void setup(){
+Serial.begin(9600);
+gpsSerial.beign(9600);
+btSerial.being(9600);
+SPI.begin();
+rfid.PCD_Init();
+pinMode(SOS_BUTTON, INPUT_PULLUP);
+pinMode(BUZZER, OUTPUT);
+pinMode(LED, OUTPUT);
+}
+void loop (){
+readGPS();
+checkRFID();
+checkSOS();
+}
+void readGPS(){
+while (gpsSerial.available()){
+gps.encode(gpsSerial.read());
+if(gps.location.isUpdated()){
+String location = "Latitude:" + String(gps.location.lat(),6) + ", Longitude: " + String(gps.location.lng(),6);
+Serial.println(location);
+btSerial.println(loaction);
+}
+}
+}
+void checkRFID(){
+if (!rfid.PICC_IsNewCardPresent() || !rfid.PICC_ReadCardSerial()) return;
+String rfidTag = "";
+for (byte i = 0; i < rfid.uid.size; i++) {
+rfidTag += String(rfid.uid.uidByte[i], HEX);
+}
+Serial.println("Student RFID: " + rfidTag);
+btSerial.println("Student Entered: " + rfidTag);
+rfid.PICC_HaltA();
+rfid.PCD_StopCrypto1();
+}
+void checkSOS() {
+if (digitalRead(SOS_BUTTON) == LOW) {
+digitalWrite(BUZZER, HIGH);
+digitalWrite(LED, HIGH);
+Serial.println("SOS ALERT!");
+btSerial.println("SOS ALERT! Emergency detected.");
+delay(2000);
+digitalWrite(BUZZER, LOW);
+digitalWrite(LED, LOW);
+}
+}
